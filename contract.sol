@@ -1,3 +1,4 @@
+pragma solidity ^0.4.3;
 contract EtherBank {
   struct Account {
     uint balance;
