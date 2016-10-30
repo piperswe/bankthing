@@ -11,6 +11,20 @@ contract Bank {
 
   mapping(address => Account) private accounts;
 
+  function withdraw(uint amount) {
+    Account account = accounts[msg.sender];
+    if (calculateBalance(account) - amount < 0) {
+      throw;
+    } else if (msg.sender.send(amount)) {
+      account.transactions.push(Transaction(Withdraw, amount));
+    }
+  }
+
+  function deposit() payable {
+    Account account = accounts[msg.sender];
+    account.transactions.push(Transaction(Deposit, msg.value));
+  }
+
   function calculateBalance(Account account) internal
     returns (uint balance)
   {
