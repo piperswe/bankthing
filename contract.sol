@@ -5,21 +5,25 @@ contract EtherBank {
   }
 
   mapping(address => Account) private accounts;
-  // Interest rates are in ten-thousandths of a percent per hour.
+  // Interest rates are in ten-thousandths of a percent per hundred blocks.
   uint public savingsInterestRate;
   uint public loanInterestRate;
 
-  function EtherBank(uint sir, uint lir) {
+  function EtherBank(uint sir, uint lir) payable {
     savingsInterestRate = sir;
     loanInterestRate = lir;
+
+    deposit();
   }
 
   function withdraw(uint amount) {
     Account account = accounts[msg.sender];
+    recalculateInterest();
     if (account.balance - amount >= 0 && amount >= 0) {
-      if (msg.sender.send(amount)) {
-        account.balance -= amount;
-      } else {
+      // Done this way to protect against recursive calling vuln
+      account.balance -= amount;
+      if (!msg.sender.send(amount)) {
+        account.balance += amount;
         throw;
       }
     }
@@ -40,12 +44,10 @@ contract EtherBank {
   function recalculateInterest() {
     Account account = accounts[msg.sender];
 
-    if (now - account.lastInterestPayment >= 1 minutes) {
-      uint time = (now - account.lastInterestPayment) / 1 minutes;
-      uint otherTime = (now - account.lastInterestPayment) % 1 minutes;
+    uint time = (block.number - account.lastInterestPayment) / 10;
+    uint otherTime = (block.number - account.lastInterestPayment) % 10;
 
-      account.balance = account.balance * (((10000 + savingsInterestRate) ** time) / (10000 ** time));
-      account.lastInterestPayment = now - otherTime;
-    }
+    account.balance = account.balance * (((1000000 + savingsInterestRate) ** time) / (1000000 ** time));
+    account.lastInterestPayment = now - otherTime;
   }
 }
