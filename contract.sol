@@ -5,6 +5,9 @@ contract EtherBank {
     uint lastInterestPayment;
   }
 
+  event Deposit(address addr, uint amount, uint balance);
+  event Withdraw(address addr, uint amount, uint balance);
+
   mapping(address => Account) private accounts;
   // Interest rates are in ten-thousandths of a percent per hundred blocks.
   uint public savingsInterestRate;
@@ -13,8 +16,6 @@ contract EtherBank {
   function EtherBank(uint sir, uint lir) payable {
     savingsInterestRate = sir;
     loanInterestRate = lir;
-
-    deposit();
   }
 
   function withdraw(uint amount) {
@@ -27,15 +28,22 @@ contract EtherBank {
         account.balance += amount;
         throw;
       }
+      Withdraw(msg.sender, amount, account.balance);
     }
+
+    accounts[msg.sender] = account;
   }
 
   function deposit() payable {
     Account account = accounts[msg.sender];
+    recalculateInterest();
     // Prevent overflow
     if (account.balance + msg.value < account.balance) throw;
 
     account.balance += msg.value;
+
+    accounts[msg.sender] = account;
+    Deposit(msg.sender, msg.value, account.balance);
   }
 
   function balance() constant returns (uint balance) {
@@ -43,12 +51,14 @@ contract EtherBank {
   }
 
   function recalculateInterest() {
-    Account account = accounts[msg.sender];
+    /*Account account = accounts[msg.sender];
 
-    uint time = (block.number - account.lastInterestPayment) / 10;
-    uint otherTime = (block.number - account.lastInterestPayment) % 10;
+    uint blocknum = block.number;
+    uint time = blocknum - account.lastInterestPayment;
 
     account.balance = account.balance * (((1000000 + savingsInterestRate) ** time) / (1000000 ** time));
-    account.lastInterestPayment = now - otherTime;
+    account.lastInterestPayment = blocknum;
+
+    accounts[msg.sender] = account;*/
   }
 }
