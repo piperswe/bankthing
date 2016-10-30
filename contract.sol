@@ -1,7 +1,7 @@
 contract Bank {
   enum TransactionType { Deposit, Withdraw }
   struct Transaction {
-    TransactionType type;
+    TransactionType transactionType;
     uint amount;
   }
 
@@ -16,24 +16,24 @@ contract Bank {
     if (calculateBalance(account) - amount < 0) {
       throw;
     } else if (msg.sender.send(amount)) {
-      account.transactions.push(Transaction(Withdraw, amount));
+      account.transactions.push(Transaction(TransactionType.Withdraw, amount));
     }
   }
 
   function deposit() payable {
     Account account = accounts[msg.sender];
-    account.transactions.push(Transaction(Deposit, msg.value));
+    account.transactions.push(Transaction(TransactionType.Deposit, msg.value));
   }
 
   function calculateBalance(Account account) internal
     returns (uint balance)
   {
     uint working = 0;
-    for (int i = 0; i < account.transactions.length; i++) {
-      Transaction transaction = account.transactions[i];
-      if (transaction.type == Deposit) {
+    for (uint i = 0; i < account.transactions.length; i++) {
+      var transaction = account.transactions[i];
+      if (transaction.transactionType == TransactionType.Deposit) {
         working += transaction.amount;
-      } else if (transaction.type == Withdraw) {
+      } else if (transaction.transactionType == TransactionType.Withdraw) {
         working -= transaction.amount;
       }
     }
