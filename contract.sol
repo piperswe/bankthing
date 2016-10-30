@@ -1,36 +1,36 @@
 contract Bank {
-  enum TransactionType { Deposit, Withdraw }
+  enum TransactionType { Initial, Deposit, Withdraw }
   struct Transaction {
     TransactionType transactionType;
     uint amount;
   }
 
-  struct Account {
-    Transaction[] transactions;
-  }
-
-  mapping(address => Account) private accounts;
+  mapping(address => Transaction[]) private accounts;
 
   function withdraw(uint amount) {
-    Account account = accounts[msg.sender];
-    if (calculateBalance(account) - amount < 0) {
-      throw;
-    } else if (msg.sender.send(amount)) {
-      account.transactions.push(Transaction(TransactionType.Withdraw, amount));
+    Transaction[] account = accounts[msg.sender];
+    if (calculateBalance(account) - amount >= 0 && msg.sender.send(amount)) {
+      account.push(Transaction(TransactionType.Withdraw, amount));
     }
   }
 
   function deposit() payable {
-    Account account = accounts[msg.sender];
-    account.transactions.push(Transaction(TransactionType.Deposit, msg.value));
+    Transaction[] account = accounts[msg.sender];
+    account.push(Transaction(TransactionType.Deposit, msg.value));
   }
 
-  function calculateBalance(Account account) internal
+  function balance()
+    returns (uint balance)
+  {
+    return calculateBalance(accounts[msg.sender]);
+  }
+
+  function calculateBalance(Transaction[] account) internal
     returns (uint balance)
   {
     uint working = 0;
-    for (uint i = 0; i < account.transactions.length; i++) {
-      var transaction = account.transactions[i];
+    for (uint i = 0; i < account.length; i++) {
+      var transaction = account[i];
       if (transaction.transactionType == TransactionType.Deposit) {
         working += transaction.amount;
       } else if (transaction.transactionType == TransactionType.Withdraw) {
